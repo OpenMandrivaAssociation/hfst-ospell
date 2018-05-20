@@ -1,0 +1,11 @@
+diff -up hfst-ospell-0.5.0/office.cc.omv~ hfst-ospell-0.5.0/office.cc
+--- hfst-ospell-0.5.0/office.cc.omv~	2018-05-20 02:40:43.774552084 +0200
++++ hfst-ospell-0.5.0/office.cc	2018-05-20 02:41:58.165804788 +0200
+@@ -54,6 +54,7 @@
+ 
+ using hfst_ospell::ZHfstOspeller;
+ using hfst_ospell::Transducer;
++using icu::UnicodeString;
+ 
+ typedef std::map<UnicodeString,bool> valid_words_t;
+ valid_words_t valid_words;
