@@ -14,6 +14,7 @@ Group: System/Libraries
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: libtool
+BuildRequires: icu-devel
 BuildRequires: pkgconfig(libxml++-2.6)
 
 %description
