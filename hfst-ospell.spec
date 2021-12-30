@@ -1,11 +1,11 @@
-%define major 10
+%define major 11
 %define libname %mklibname hfstospell %{major}
 %define devname %mklibname hfstospell -d
 
 Name: hfst-ospell
-Version: 0.5.0
-Release: 2
-Source0: https://github.com/hfst/hfst-ospell/archive/v0.5.0.tar.gz
+Version: 0.5.2
+Release: 1
+Source0: https://github.com/hfst/hfst-ospell/archive/v%{version}.tar.gz
 Patch0: hfst-ospell-0.5.0-compile.patch
 Summary: Spell checker library and command line tool
 URL: http://hfst.github.io/
