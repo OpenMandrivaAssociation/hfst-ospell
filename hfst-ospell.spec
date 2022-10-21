@@ -4,7 +4,7 @@
 
 Name: hfst-ospell
 Version:	0.5.3
-Release:	1
+Release:	2
 Source0: https://github.com/hfst/hfst-ospell/archive/v%{version}.tar.gz
 Patch0: hfst-ospell-0.5.0-compile.patch
 Summary: Spell checker library and command line tool
