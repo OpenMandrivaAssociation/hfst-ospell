@@ -3,6 +3,11 @@
 %define libname %mklibname hfstospell
 %define devname %mklibname hfstospell -d
 
+%if %{cross_compiling}
+# This workaround can go as soon as we have the filesystem changes in place
+%global optflags %{optflags} -I%{_prefix}/%{_target_platform}/include/libxml++-2.6 -I%{_prefix}/%{_target_platform}/include/glibmm-2.4 -I%{_prefix}/%{_target_platform}/%{_lib}/glibmm-2.4/include -I%{_prefix}/%{_target_platform}/%{_lib}/libxml++-2.6/include
+%endif
+
 Name: hfst-ospell
 Version:	0.5.3
 Release:	3
