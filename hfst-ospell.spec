@@ -15,7 +15,7 @@ Source0: https://github.com/hfst/hfst-ospell/archive/v%{version}.tar.gz
 Patch0: hfst-ospell-0.5.0-compile.patch
 Patch1: hfst-ospell-0.5.3-compile.patch
 Summary: Spell checker library and command line tool
-URL: http://hfst.github.io/
+URL: https://hfst.github.io/
 License: Apache 2.0
 Group: System/Libraries
 BuildRequires: autoconf
