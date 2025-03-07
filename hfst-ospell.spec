@@ -10,7 +10,7 @@
 
 Name: hfst-ospell
 Version:	0.5.3
-Release:	5
+Release:	6
 Source0: https://github.com/hfst/hfst-ospell/archive/v%{version}.tar.gz
 Patch0: hfst-ospell-0.5.0-compile.patch
 Patch1: hfst-ospell-0.5.3-compile.patch
