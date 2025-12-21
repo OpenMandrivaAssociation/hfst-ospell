@@ -18,6 +18,7 @@ Summary: Spell checker library and command line tool
 URL: https://hfst.github.io/
 License: Apache 2.0
 Group: System/Libraries
+BuildRequires:	libtool-base
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: slibtool
