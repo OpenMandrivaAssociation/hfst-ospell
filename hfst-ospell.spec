@@ -20,6 +20,7 @@ Group: System/Libraries
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: slibtool
+BuildRequires: make
 BuildRequires: icu-devel
 BuildRequires: pkgconfig(libxml++-5.0)
 
