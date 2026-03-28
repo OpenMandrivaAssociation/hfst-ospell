@@ -9,21 +9,22 @@
 %endif
 
 Name: hfst-ospell
-Version:	0.5.3
-Release:	8
+Version:	0.5.4
+Release:	1
 Source0: https://github.com/hfst/hfst-ospell/archive/v%{version}.tar.gz
 Patch0: hfst-ospell-0.5.0-compile.patch
-Patch1: hfst-ospell-0.5.3-compile.patch
 Summary: Spell checker library and command line tool
 URL: https://hfst.github.io/
-License: Apache 2.0
+License: Apache-2.0
 Group: System/Libraries
-BuildRequires:	libtool-base
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: slibtool
 BuildRequires: icu-devel
-BuildRequires: pkgconfig(libxml++-2.6)
+BuildRequires: pkgconfig(libxml++-5.0)
+
+%patchlist
+hfst-ospell-0.5.4-libxml++-5.0.patch
 
 %description
 HFST spell checker library and command line tool

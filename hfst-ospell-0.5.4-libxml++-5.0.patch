@@ -1,0 +1,481 @@
+diff -up hfst-ospell-0.5.4/configure.ac.omv~ hfst-ospell-0.5.4/configure.ac
+--- hfst-ospell-0.5.4/configure.ac.omv~	2026-03-28 01:11:34.633086670 +0100
++++ hfst-ospell-0.5.4/configure.ac	2026-03-28 01:11:34.630964286 +0100
+@@ -67,7 +67,7 @@ AC_ARG_ENABLE([zhfst],
+               [enable_zhfst=$enableval], [enable_zhfst=check])
+ AC_ARG_WITH([libxmlpp],
+               [AS_HELP_STRING([--with-libxmlpp],
+-                              [support xml metadata for zipped automaton sets with libxml++-2.6 @<:@default=yes@:>@])],
++                              [support xml metadata for zipped automaton sets with libxml++-5.0 @<:@default=yes@:>@])],
+               [with_libxmlpp=$withval], [with_libxmlpp=yes])
+ AC_ARG_WITH([tinyxml2],
+               [AS_HELP_STRING([--with-tinyxml2],
+@@ -111,7 +111,7 @@ AS_IF([test x$enable_zhfst != xno],
+ 
+ AM_CONDITIONAL([WANT_ARCHIVE], [test x$enable_zhfst != xno])
+ AS_IF([test x$with_libxmlpp != xno],
+-      [PKG_CHECK_MODULES([LIBXMLPP], [libxml++-2.6 >= 2.10.0],
++      [PKG_CHECK_MODULES([LIBXMLPP], [libxml++-5.0 >= 5.0.0],
+                          [AC_DEFINE([HAVE_LIBXML], [1], [Use libxml++])
+                           enable_xml=libxmlpp],
+                          [AC_MSG_ERROR([libxml++ failed])
+diff -up hfst-ospell-0.5.4/ZHfstOspellerXmlMetadata.cc.omv~ hfst-ospell-0.5.4/ZHfstOspellerXmlMetadata.cc
+--- hfst-ospell-0.5.4/ZHfstOspellerXmlMetadata.cc.omv~	2026-03-28 01:13:08.189366668 +0100
++++ hfst-ospell-0.5.4/ZHfstOspellerXmlMetadata.cc	2026-03-28 01:25:10.910487988 +0100
+@@ -79,14 +79,14 @@ get_automaton_descr_from_id(const char*
+ 
+ #if HAVE_LIBXML
+ void
+-ZHfstOspellerXmlMetadata::verify_hfstspeller(xmlpp::Node* rootNode)
++ZHfstOspellerXmlMetadata::verify_hfstspeller(const xmlpp::Node* rootNode)
+   {
+-    xmlpp::Element* rootElement = dynamic_cast<xmlpp::Element*>(rootNode);
++    const xmlpp::Element* rootElement = dynamic_cast<const xmlpp::Element*>(rootNode);
+     if (NULL == rootElement)
+       {
+         throw ZHfstMetaDataParsingError("Root node is not an element");
+       }
+-    const Glib::ustring rootName = rootElement->get_name();
++    const std::string rootName = rootElement->get_name();
+     if (rootName != "hfstspeller")
+       {
+         throw ZHfstMetaDataParsingError("could not find <hfstspeller> "
+@@ -99,7 +99,7 @@ ZHfstOspellerXmlMetadata::verify_hfstspe
+       {
+         throw ZHfstMetaDataParsingError("No hfstversion attribute in root");
+       }
+-    const Glib::ustring hfstversionValue = hfstversion->get_value();
++    const std::string hfstversionValue = hfstversion->get_value();
+     if (hfstversionValue != "3")
+       {
+         throw ZHfstMetaDataParsingError("Unrecognised HFST version...");
+@@ -109,7 +109,7 @@ ZHfstOspellerXmlMetadata::verify_hfstspe
+       {
+         throw ZHfstMetaDataParsingError("No dtdversion attribute in root");
+       }
+-    const Glib::ustring dtdversionValue = dtdversion->get_value();
++    const std::string dtdversionValue = dtdversion->get_value();
+     if (dtdversionValue != "1.0")
+       {
+         throw ZHfstMetaDataParsingError("Unrecognised DTD version...");
+@@ -117,12 +117,12 @@ ZHfstOspellerXmlMetadata::verify_hfstspe
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_info(xmlpp::Node* infoNode)
++ZHfstOspellerXmlMetadata::parse_info(const xmlpp::Node* infoNode)
+   {
+-    xmlpp::Node::NodeList infos = infoNode->get_children();
++    xmlpp::Node::const_NodeList infos = infoNode->get_children();
+     for (auto& info : infos)
+       {
+-        const Glib::ustring infoName = info->get_name();
++        const std::string infoName = info->get_name();
+         if (infoName == "locale")
+           {
+             parse_locale(info);
+@@ -153,7 +153,7 @@ ZHfstOspellerXmlMetadata::parse_info(xml
+           }
+         else
+           {
+-            const xmlpp::TextNode* text = dynamic_cast<xmlpp::TextNode*>(info);
++            const xmlpp::TextNode* text = dynamic_cast<const xmlpp::TextNode*>(info);
+             if ((text == NULL) || (!text->is_white_space()))
+               {
+                 fprintf(stderr, "DEBUG: unknown info child %s\n",
+@@ -164,14 +164,14 @@ ZHfstOspellerXmlMetadata::parse_info(xml
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_locale(xmlpp::Node* localeNode)
++ZHfstOspellerXmlMetadata::parse_locale(const xmlpp::Node* localeNode)
+   {
+-    xmlpp::Element* localeElement = dynamic_cast<xmlpp::Element*>(localeNode);
+-    if (NULL == localeElement->get_child_text())
++    const xmlpp::Element* localeElement = dynamic_cast<const xmlpp::Element*>(localeNode);
++    if (NULL == localeElement->get_first_child_text())
+       {
+         throw ZHfstXmlParsingError("<locale> must be non-empty");
+       }
+-    const Glib::ustring localeContent = localeElement->get_child_text()->get_content();
++    const std::string localeContent = localeElement->get_first_child_text()->get_content();
+     if ((info_.locale_ != "und") && (info_.locale_ != localeContent))
+       {
+         // locale in XML mismatches previous definition
+@@ -184,78 +184,78 @@ ZHfstOspellerXmlMetadata::parse_locale(x
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_title(xmlpp::Node* titleNode)
++ZHfstOspellerXmlMetadata::parse_title(const xmlpp::Node* titleNode)
+   {
+-    xmlpp::Element* titleElement = dynamic_cast<xmlpp::Element*>(titleNode);
++    const xmlpp::Element* titleElement = dynamic_cast<const xmlpp::Element*>(titleNode);
+     const xmlpp::Attribute* lang = titleElement->get_attribute("lang");
+-    if (NULL == titleElement->get_child_text())
++    if (NULL == titleElement->get_first_child_text())
+       {
+         throw ZHfstXmlParsingError("<title> must be non-empty");
+       }
+     if (lang != NULL)
+       {
+-        info_.title_[lang->get_value()] = titleElement->get_child_text()->get_content();
++        info_.title_[lang->get_value()] = titleElement->get_first_child_text()->get_content();
+       }
+     else
+       {
+-        info_.title_[info_.locale_] = titleElement->get_child_text()->get_content();
++        info_.title_[info_.locale_] = titleElement->get_first_child_text()->get_content();
+       }
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_description(xmlpp::Node* descriptionNode)
++ZHfstOspellerXmlMetadata::parse_description(const xmlpp::Node* descriptionNode)
+   {
+-    xmlpp::Element* descriptionElement =
+-        dynamic_cast<xmlpp::Element*>(descriptionNode);
++    const xmlpp::Element* descriptionElement =
++        dynamic_cast<const xmlpp::Element*>(descriptionNode);
+     const xmlpp::Attribute* lang = descriptionElement->get_attribute("lang");
+-    if (NULL == descriptionElement->get_child_text())
++    if (NULL == descriptionElement->get_first_child_text())
+       {
+         throw ZHfstXmlParsingError("<description> must be non-empty");
+       }
+     if (lang != NULL)
+       {
+         info_.description_[lang->get_value()] =
+-          descriptionElement->get_child_text()->get_content();
++          descriptionElement->get_first_child_text()->get_content();
+       }
+     else
+       {
+         info_.description_[info_.locale_] =
+-          descriptionElement->get_child_text()->get_content();
++          descriptionElement->get_first_child_text()->get_content();
+       }
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_version(xmlpp::Node* versionNode)
++ZHfstOspellerXmlMetadata::parse_version(const xmlpp::Node* versionNode)
+   {
+-    xmlpp::Element* versionElement = dynamic_cast<xmlpp::Element*>(versionNode);
++    const xmlpp::Element* versionElement = dynamic_cast<const xmlpp::Element*>(versionNode);
+     const xmlpp::Attribute* revision = versionElement->get_attribute("vcsrev");
+     if (revision != NULL)
+       {
+         info_.vcsrev_ = revision->get_value();
+       }
+-    info_.version_ = versionElement->get_child_text()->get_content();
++    info_.version_ = versionElement->get_first_child_text()->get_content();
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_date(xmlpp::Node* dateNode)
++ZHfstOspellerXmlMetadata::parse_date(const xmlpp::Node* dateNode)
+   {
+-    xmlpp::Element* dateElement =
+-        dynamic_cast<xmlpp::Element*>(dateNode);
+-    info_.date_ = dateElement->get_child_text()->get_content();
++    const xmlpp::Element* dateElement =
++        dynamic_cast<const xmlpp::Element*>(dateNode);
++    info_.date_ = dateElement->get_first_child_text()->get_content();
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_producer(xmlpp::Node* producerNode)
++ZHfstOspellerXmlMetadata::parse_producer(const xmlpp::Node* producerNode)
+   {
+-    xmlpp::Element* producerElement =
+-        dynamic_cast<xmlpp::Element*>(producerNode);
+-    info_.producer_ = producerElement->get_child_text()->get_content();
++    const xmlpp::Element* producerElement =
++        dynamic_cast<const xmlpp::Element*>(producerNode);
++    info_.producer_ = producerElement->get_first_child_text()->get_content();
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_contact(xmlpp::Node* contactNode)
++ZHfstOspellerXmlMetadata::parse_contact(const xmlpp::Node* contactNode)
+   {
+-    xmlpp::Element* contactElement = dynamic_cast<xmlpp::Element*>(contactNode);
++    const xmlpp::Element* contactElement = dynamic_cast<const xmlpp::Element*>(contactNode);
+     const xmlpp::Attribute* email = contactElement->get_attribute("email");
+     const xmlpp::Attribute* website = contactElement->get_attribute("website");
+     if (email != NULL)
+@@ -270,16 +270,16 @@ ZHfstOspellerXmlMetadata::parse_contact(
+ 
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_acceptor(xmlpp::Node* acceptorNode)
++ZHfstOspellerXmlMetadata::parse_acceptor(const xmlpp::Node* acceptorNode)
+   {
+-    xmlpp::Element* acceptorElement =
+-        dynamic_cast<xmlpp::Element*>(acceptorNode);
+-    xmlpp::Attribute* xid = acceptorElement->get_attribute("id");
++    const xmlpp::Element* acceptorElement =
++        dynamic_cast<const xmlpp::Element*>(acceptorNode);
++    const xmlpp::Attribute* xid = acceptorElement->get_attribute("id");
+     if (xid == NULL)
+       {
+         throw ZHfstMetaDataParsingError("id missing in acceptor");
+       }
+-    const Glib::ustring xidValue = xid->get_value();
++    const std::string xidValue = xid->get_value();
+     if (validate_automaton_id(xidValue.c_str()) == false)
+       {
+         throw ZHfstMetaDataParsingError("Invalid id in acceptor");
+@@ -298,10 +298,10 @@ ZHfstOspellerXmlMetadata::parse_acceptor
+       {
+         acceptor_[descr].type_ = xtype->get_value();
+       }
+-    xmlpp::Node::NodeList accs = acceptorNode->get_children();
++    xmlpp::Node::const_NodeList accs = acceptorNode->get_children();
+     for (auto& acc : accs)
+       {
+-        const Glib::ustring accName = acc->get_name();
++        const std::string accName = acc->get_name();
+         if (accName == "title")
+           {
+             parse_title(acc, descr);
+@@ -312,7 +312,7 @@ ZHfstOspellerXmlMetadata::parse_acceptor
+           }
+         else
+           {
+-            const xmlpp::TextNode* text = dynamic_cast<xmlpp::TextNode*>(acc);
++            const xmlpp::TextNode* text = dynamic_cast<const xmlpp::TextNode*>(acc);
+             if ((text == NULL) || (!text->is_white_space()))
+               {
+                 fprintf(stderr, "DEBUG: unknown acceptor node %s\n",
+@@ -324,49 +324,49 @@ ZHfstOspellerXmlMetadata::parse_acceptor
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_title(xmlpp::Node* titleNode,
++ZHfstOspellerXmlMetadata::parse_title(const xmlpp::Node* titleNode,
+                                       const string& descr)
+   {
+-    xmlpp::Element* titleElement = dynamic_cast<xmlpp::Element*>(titleNode);
++    const xmlpp::Element* titleElement = dynamic_cast<const xmlpp::Element*>(titleNode);
+     const xmlpp::Attribute* lang = titleElement->get_attribute("lang");
+     if (lang != NULL)
+       {
+-        acceptor_[descr].title_[lang->get_value()] = titleElement->get_child_text()->get_content();
++        acceptor_[descr].title_[lang->get_value()] = titleElement->get_first_child_text()->get_content();
+       }
+     else
+       {
+-        acceptor_[descr].title_[info_.locale_] = titleElement->get_child_text()->get_content();
++        acceptor_[descr].title_[info_.locale_] = titleElement->get_first_child_text()->get_content();
+       }
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_description(xmlpp::Node* descriptionNode,
++ZHfstOspellerXmlMetadata::parse_description(const xmlpp::Node* descriptionNode,
+                                             const string& descr)
+   {
+-    xmlpp::Element* descriptionElement =
+-        dynamic_cast<xmlpp::Element*>(descriptionNode);
++    const xmlpp::Element* descriptionElement =
++        dynamic_cast<const xmlpp::Element*>(descriptionNode);
+     const xmlpp::Attribute* lang = descriptionElement->get_attribute("lang");
+     if (lang != NULL)
+       {
+-        acceptor_[descr].description_[lang->get_value()] = descriptionElement->get_child_text()->get_content();
++        acceptor_[descr].description_[lang->get_value()] = descriptionElement->get_first_child_text()->get_content();
+       }
+     else
+       {
+-        acceptor_[descr].description_[info_.locale_] = descriptionElement->get_child_text()->get_content();
++        acceptor_[descr].description_[info_.locale_] = descriptionElement->get_first_child_text()->get_content();
+       }
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_errmodel(xmlpp::Node* errmodelNode)
++ZHfstOspellerXmlMetadata::parse_errmodel(const xmlpp::Node* errmodelNode)
+   {
+-    xmlpp::Element* errmodelElement =
+-        dynamic_cast<xmlpp::Element*>(errmodelNode);
+-    xmlpp::Attribute* xid = errmodelElement->get_attribute("id");
++    const xmlpp::Element* errmodelElement =
++        dynamic_cast<const xmlpp::Element*>(errmodelNode);
++    const xmlpp::Attribute* xid = errmodelElement->get_attribute("id");
+     if (xid == NULL)
+       {
+         throw ZHfstMetaDataParsingError("id missing in errmodel");
+       }
+-    const Glib::ustring xidValue = xid->get_value();
++    const std::string xidValue = xid->get_value();
+     if (validate_automaton_id(xidValue.c_str()) == false)
+       {
+         throw ZHfstMetaDataParsingError("Invalid id in errmodel");
+@@ -380,10 +380,10 @@ ZHfstOspellerXmlMetadata::parse_errmodel
+       }
+     free(descr);
+     errmodel_[errm_count].id_ = xidValue;
+-    xmlpp::Node::NodeList errms = errmodelNode->get_children();
++    xmlpp::Node::const_NodeList errms = errmodelNode->get_children();
+     for (auto& errm : errms)
+       {
+-        const Glib::ustring errmName = errm->get_name();
++        const std::string errmName = errm->get_name();
+         if (errmName == "title")
+           {
+             parse_title(errm, errm_count);
+@@ -402,7 +402,7 @@ ZHfstOspellerXmlMetadata::parse_errmodel
+           }
+         else
+           {
+-            const xmlpp::TextNode* text = dynamic_cast<xmlpp::TextNode*>(errm);
++            const xmlpp::TextNode* text = dynamic_cast<const xmlpp::TextNode*>(errm);
+             if ((text == NULL) || (!text->is_white_space()))
+               {
+                 fprintf(stderr, "DEBUG: unknown errmodel node %s\n",
+@@ -413,42 +413,42 @@ ZHfstOspellerXmlMetadata::parse_errmodel
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_title(xmlpp::Node* titleNode,
++ZHfstOspellerXmlMetadata::parse_title(const xmlpp::Node* titleNode,
+                                       size_t errm_count)
+   {
+-    xmlpp::Element* titleElement = dynamic_cast<xmlpp::Element*>(titleNode);
++    const xmlpp::Element* titleElement = dynamic_cast<const xmlpp::Element*>(titleNode);
+     const xmlpp::Attribute* lang = titleElement->get_attribute("lang");
+     if (lang != NULL)
+       {
+-        errmodel_[errm_count].title_[lang->get_value()] = titleElement->get_child_text()->get_content();
++        errmodel_[errm_count].title_[lang->get_value()] = titleElement->get_first_child_text()->get_content();
+       }
+     else
+       {
+-        errmodel_[errm_count].title_[info_.locale_] = titleElement->get_child_text()->get_content();
++        errmodel_[errm_count].title_[info_.locale_] = titleElement->get_first_child_text()->get_content();
+       }
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_description(xmlpp::Node* descriptionNode,
++ZHfstOspellerXmlMetadata::parse_description(const xmlpp::Node* descriptionNode,
+                                             size_t errm_count)
+   {
+-    xmlpp::Element* descriptionElement =
+-        dynamic_cast<xmlpp::Element*>(descriptionNode);
++    const xmlpp::Element* descriptionElement =
++        dynamic_cast<const xmlpp::Element*>(descriptionNode);
+     const xmlpp::Attribute* lang = descriptionElement->get_attribute("lang");
+     if (lang != NULL)
+       {
+-        errmodel_[errm_count].description_[lang->get_value()] = descriptionElement->get_child_text()->get_content();
++        errmodel_[errm_count].description_[lang->get_value()] = descriptionElement->get_first_child_text()->get_content();
+       }
+     else
+       {
+-        errmodel_[errm_count].description_[info_.locale_] = descriptionElement->get_child_text()->get_content();
++        errmodel_[errm_count].description_[info_.locale_] = descriptionElement->get_first_child_text()->get_content();
+       }
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_type(xmlpp::Node* typeNode, size_t errm_count)
++ZHfstOspellerXmlMetadata::parse_type(const xmlpp::Node* typeNode, size_t errm_count)
+   {
+-    xmlpp::Element* typeElement = dynamic_cast<xmlpp::Element*>(typeNode);
++    const xmlpp::Element* typeElement = dynamic_cast<const xmlpp::Element*>(typeNode);
+     const xmlpp::Attribute* xtype = typeElement->get_attribute("type");
+     if (xtype != NULL)
+       {
+@@ -462,10 +462,10 @@ ZHfstOspellerXmlMetadata::parse_type(xml
+   }
+ 
+ void
+-ZHfstOspellerXmlMetadata::parse_model(xmlpp::Node* modelNode, size_t errm_count)
++ZHfstOspellerXmlMetadata::parse_model(const xmlpp::Node* modelNode, size_t errm_count)
+   {
+-    xmlpp::Element* modelElement = dynamic_cast<xmlpp::Element*>(modelNode);
+-    errmodel_[errm_count].model_.push_back(modelElement->get_child_text()->get_content());
++    const xmlpp::Element* modelElement = dynamic_cast<const xmlpp::Element*>(modelNode);
++    errmodel_[errm_count].model_.push_back(modelElement->get_first_child_text()->get_content());
+   }
+ 
+ void
+@@ -475,7 +475,7 @@ ZHfstOspellerXmlMetadata::parse_xml(cons
+       {
+         throw ZHfstMetaDataParsingError("Cannot parse XML data");
+       }
+-    xmlpp::Node* rootNode = doc->get_root_node();
++    const xmlpp::Node* rootNode = doc->get_root_node();
+     // check validity
+     if (NULL == rootNode)
+       {
+@@ -483,10 +483,10 @@ ZHfstOspellerXmlMetadata::parse_xml(cons
+       }
+     verify_hfstspeller(rootNode);
+     // parse
+-    xmlpp::Node::NodeList nodes = rootNode->get_children();
++    xmlpp::Node::const_NodeList nodes = rootNode->get_children();
+     for (auto& node : nodes)
+       {
+-        const Glib::ustring nodename = node->get_name();
++        const std::string nodename = node->get_name();
+         if (nodename == "info")
+           {
+             parse_info(node);
+@@ -501,7 +501,7 @@ ZHfstOspellerXmlMetadata::parse_xml(cons
+           } // errmodel node
+         else
+           {
+-            const xmlpp::TextNode* text = dynamic_cast<xmlpp::TextNode*>(node);
++            const xmlpp::TextNode* text = dynamic_cast<const xmlpp::TextNode*>(node);
+             if ((text == NULL) || (!text->is_white_space()))
+               {
+                 fprintf(stderr, "DEBUG: unknown root child %s\n",
+diff -up hfst-ospell-0.5.4/ZHfstOspellerXmlMetadata.h.omv~ hfst-ospell-0.5.4/ZHfstOspellerXmlMetadata.h
+--- hfst-ospell-0.5.4/ZHfstOspellerXmlMetadata.h.omv~	2026-03-28 01:18:06.697130570 +0100
++++ hfst-ospell-0.5.4/ZHfstOspellerXmlMetadata.h	2026-03-28 01:20:13.640467081 +0100
+@@ -124,24 +124,24 @@ namespace hfst_ospell
+ #if HAVE_LIBXML
+         private:
+         void parse_xml(const xmlpp::Document* doc);
+-        void verify_hfstspeller(xmlpp::Node* hfstspellerNode);
+-        void parse_info(xmlpp::Node* infoNode);
+-        void parse_locale(xmlpp::Node* localeNode);
+-        void parse_title(xmlpp::Node* titleNode);
+-        void parse_description(xmlpp::Node* descriptionNode);
+-        void parse_version(xmlpp::Node* versionNode);
+-        void parse_date(xmlpp::Node* dateNode);
+-        void parse_producer(xmlpp::Node* producerNode);
+-        void parse_contact(xmlpp::Node* contactNode);
+-        void parse_acceptor(xmlpp::Node* acceptorNode);
+-        void parse_title(xmlpp::Node* titleNode, const std::string& accName);
+-        void parse_description(xmlpp::Node* descriptionNode,
++        void verify_hfstspeller(const xmlpp::Node* hfstspellerNode);
++        void parse_info(const xmlpp::Node* infoNode);
++        void parse_locale(const xmlpp::Node* localeNode);
++        void parse_title(const xmlpp::Node* titleNode);
++        void parse_description(const xmlpp::Node* descriptionNode);
++        void parse_version(const xmlpp::Node* versionNode);
++        void parse_date(const xmlpp::Node* dateNode);
++        void parse_producer(const xmlpp::Node* producerNode);
++        void parse_contact(const xmlpp::Node* contactNode);
++        void parse_acceptor(const xmlpp::Node* acceptorNode);
++        void parse_title(const xmlpp::Node* titleNode, const std::string& accName);
++        void parse_description(const xmlpp::Node* descriptionNode,
+                                const std::string& accName);
+-        void parse_errmodel(xmlpp::Node* errmodelNode);
+-        void parse_title(xmlpp::Node* titleNode, size_t errm_count);
+-        void parse_description(xmlpp::Node* descriptionNode, size_t errm_count);
+-        void parse_type(xmlpp::Node* typeNode, size_t errm_count);
+-        void parse_model(xmlpp::Node* modelNode, size_t errm_count);
++        void parse_errmodel(const xmlpp::Node* errmodelNode);
++        void parse_title(const xmlpp::Node* titleNode, size_t errm_count);
++        void parse_description(const xmlpp::Node* descriptionNode, size_t errm_count);
++        void parse_type(const xmlpp::Node* typeNode, size_t errm_count);
++        void parse_model(const xmlpp::Node* modelNode, size_t errm_count);
+ #elif HAVE_TINYXML2
+         private:
+         void parse_xml(const tinyxml2::XMLDocument& doc);
