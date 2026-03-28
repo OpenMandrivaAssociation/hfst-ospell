@@ -48,7 +48,7 @@ Development files (Headers etc.) for %{name}.
 
 %prep
 %autosetup -p1
-./autogen.sh
+LIBTOOLIZE=slibtoolize LIBTOOL_VERSION="slibtoolize --version |cut -d' ' -f4 |sed -e 's,\.$,,'" ./autogen.sh
 %configure
 
 %build
